@@ -1,8 +1,8 @@
-package server;
+package org.espify.server;
 
 import java.util.ArrayList;
 import java.util.List;
-import models.Song;
+import org.espify.models.Song;
 
 public class Room {
     private String name;

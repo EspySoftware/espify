@@ -1,6 +1,7 @@
 
-# Compile
+# Compile and run
 
 ```bash
-jar cfm target/TerminalClient.jar manifest.txt -C target client -C libs jl1.0.1.jar
+./mvnw clean install
+java -jar target/espify-1.0.jar
 ```

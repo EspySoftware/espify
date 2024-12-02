@@ -1,9 +1,9 @@
-package server;
+package org.espify.server;
 
 import java.io.*;
 import java.net.Socket;
 import java.util.concurrent.ConcurrentHashMap;
-import models.Song;
+import org.espify.models.Song;
 
 public class ClientHandler implements Runnable {
     private Socket socket;

@@ -1,4 +1,4 @@
-package models;
+package org.espify.models;
 
 public class Song {
     String name;
