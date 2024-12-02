@@ -15,6 +15,27 @@
     </properties>
 
     <dependencies>
+        <!-- Javalin for REST API -->
+        <dependency>
+            <groupId>io.javalin</groupId>
+            <artifactId>javalin</artifactId>
+            <version>5.6.1</version>
+        </dependency>
+
+        <!-- JLayer for MP3 playback -->
+        <dependency>
+            <groupId>javazoom</groupId>
+            <artifactId>jlayer</artifactId>
+            <version>1.0.1</version>
+        </dependency>
+
+        <!-- SLF4J for logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>2.0.7</version>
+        </dependency>
+
         <!-- GSON for JSON Parsing -->
         <dependency>
             <groupId>com.google.code.gson</groupId>

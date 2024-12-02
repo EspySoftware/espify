@@ -1,16 +1,18 @@
 package server;
 
 import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.net.Socket;
+import java.util.concurrent.ConcurrentHashMap;
+import models.Song;
 
 public class ClientHandler implements Runnable {
-    Socket socket;
-    BufferedReader in;
-    PrintWriter out;
-    Map<String, Room> rooms;
+    private Socket socket;
+    private BufferedReader input;
+    private PrintWriter output;
+    private ConcurrentHashMap<String, Room> rooms;
+    private Room currentRoom;
 
-    public ClientHandler(Socket socket, Map<String, Room> rooms) {
+    public ClientHandler(Socket socket, ConcurrentHashMap<String, Room> rooms) {
         this.socket = socket;
         this.rooms = rooms;
     }
@@ -18,34 +20,48 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         try {
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream(), true);
+            input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            output = new PrintWriter(socket.getOutputStream(), true);
 
-            // Handle client input
-            String input;
-            while ((input = in.readLine()) != null) {
-                System.out.println("Received: " + input);
-                handleInput(input);
+            String msg;
+            while ((msg = input.readLine()) != null) {
+                handleMessage(msg);
             }
         } catch (IOException e) {
-            System.out.println("Error: " + e.getMessage());
+            e.printStackTrace();
         } finally {
-            closeConnection();
+            try {
+                socket.close();
+                if (currentRoom != null) {
+                    currentRoom.removeClient(this);
+                }
+                Server.clients.remove(socket.getInetAddress().toString());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    void handleInput(String input) {
-        // TODO: Handle commands like "joinRoom Room1", "addSong SongName", etc.
-    }
-
-    void closeConnection() {
-        try {
-            socket.close();
-        } catch (IOException e) {
-            System.out.println("Error: " + e.getMessage());
+    void handleMessage(String msg) {
+        if (msg.startsWith("joinRoom")) {
+            String roomName = msg.split(" ")[1];
+            currentRoom = rooms.computeIfAbsent(roomName, Room::new);
+            currentRoom.addClient(this);
+            sendMessage("Joined room: " + roomName);
+        } else if (msg.startsWith("addSong")) {
+            String songName = msg.substring(8).trim();
+            if (currentRoom != null) {
+                currentRoom.addSong(new Song(songName));
+                sendMessage("Added song: " + songName);
+            } else {
+                sendMessage("You are not in a room.");
+            }
+        } else {
+            sendMessage("Unknown command.");
         }
     }
 
     public void sendMessage(String message) {
+        output.println(message);
     }
 }

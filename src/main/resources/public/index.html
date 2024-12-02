@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Espify</title>
+    <script>
+        let socket;
+
+        function initializeWebSocket() {
+            socket = new WebSocket("ws://localhost:7000/ws");
+
+            socket.onopen = function() {
+                console.log("WebSocket connection established.");
+            };
+
+            socket.onmessage = function(event) {
+                console.log("Message from server: " + event.data);
+            };
+
+            socket.onclose = function() {
+                console.log("WebSocket connection closed.");
+            };
+
+            socket.onerror = function(error) {
+                console.error("WebSocket error: ", error);
+            };
+        }
+
+        window.onload = initializeWebSocket;
+
+        async function joinRoom() {
+            const roomName = document.getElementById('roomName').value;
+            const response = await fetch(`/joinRoom?room=${roomName}`);
+            const data = await response.text();
+            console.log(data);
+        }
+
+        async function addSong() {
+            const songName = document.getElementById('songName').value;
+            const response = await fetch(`/addSong?song=${songName}`, { method: 'POST' });
+            const data = await response.text();
+            console.log(data);
+        }
+
+        async function sendMessage() {
+            const message = document.getElementById('message').value;
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(message);
+            } else {
+                console.log("WebSocket is not open.");
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Espify</h1>
+    <input type="text" id="roomName" placeholder="Room Name">
+    <button onclick="joinRoom()">Join Room</button>
+    <br><br>
+    <input type="text" id="songName" placeholder="Song Name">
+    <button onclick="addSong()">Add Song</button>
+    <br><br>
+    <input type="text" id="message" placeholder="Message">
+    <button onclick="sendMessage()">Send Message</button>
+</body>
+</html>

@@ -1,30 +1,45 @@
 package server;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import models.Song;
 
-public class Room {
-    String name;
-    ArrayList<String> playlist;
-    ArrayList<ClientHandler> clients;
+public class Room implements Runnable {
+    private String name;
+    private List<Song> playlist = new ArrayList<>();
+    private List<ClientHandler> clients = new ArrayList<>();
 
-    Room(String name) {
+    public Room(String name) {
         this.name = name;
-        this.playlist = new ArrayList<>();
-        this.clients = new ArrayList<>();
     }
 
-    synchronized void addSong(String song) {
-        playlist.add(song);
-        broadcast("Song added: " + song);
+    public String getName() {
+        return name;
     }
 
-    synchronized void addClient(ClientHandler client) {
+    public synchronized void addClient(ClientHandler client) {
         clients.add(client);
+        broadcast("A user has joined the room.");
     }
 
-    synchronized void broadcast(String message) {
+    public synchronized void removeClient(ClientHandler client) {
+        clients.remove(client);
+        broadcast("A user has left the room.");
+    }
+
+    public synchronized void addSong(Song song) {
+        playlist.add(song);
+        broadcast("New song added: " + song.getName());
+    }
+
+    public synchronized void broadcast(String message) {
         for (ClientHandler client : clients) {
             client.sendMessage(message);
         }
+    }
+
+    @Override
+    public void run() {
+        // Additional synchronization tasks if needed
     }
 }
