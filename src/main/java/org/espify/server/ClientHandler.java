@@ -2,19 +2,37 @@ package org.espify.server;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
-import org.espify.models.Song;
+import org.espify.server.commands.AddSongCommand;
+import org.espify.server.commands.Command;
+import org.espify.server.commands.JoinRoomCommand;
+import org.espify.server.commands.ListSongsCommand;
+import org.espify.server.commands.SkipSongCommand;
+import org.espify.server.commands.PlaySongCommand;
 
 public class ClientHandler implements Runnable {
     private Socket socket;
     private BufferedReader input;
     private PrintWriter output;
     private ConcurrentHashMap<String, Room> rooms;
+    private HashMap<String, Command> commands;
     private Room currentRoom;
 
     public ClientHandler(Socket socket, ConcurrentHashMap<String, Room> rooms) {
         this.socket = socket;
         this.rooms = rooms;
+        initializeCommands();
+    }
+
+    private void initializeCommands() {
+        commands = new HashMap<>();
+        commands.put("joinRoom", new JoinRoomCommand());
+        commands.put("addSong", new AddSongCommand());
+        commands.put("playSong", new PlaySongCommand());
+        commands.put("skipSong", new SkipSongCommand());
+        commands.put("listSongs", new ListSongsCommand()); // Registering the new command
+
     }
 
     @Override
@@ -41,28 +59,13 @@ public class ClientHandler implements Runnable {
             }
         }
     }
-
     void handleMessage(String msg) {
-        if (msg.startsWith("joinRoom")) {
-            String roomName = msg.split(" ")[1];
-            currentRoom = rooms.computeIfAbsent(roomName, Room::new);
-            currentRoom.addClient(this);
-            sendMessage("Joined room: " + roomName);
-        } else if (msg.startsWith("addSong")) {
-            String songName = msg.substring(8).trim();
-            if (currentRoom != null) {
-                currentRoom.addSong(new Song(songName));
-                sendMessage("Added song: " + songName);
-            } else {
-                sendMessage("You are not in a room.");
-            }
-        } else if (msg.startsWith("playSong")) {
-            String songPath = msg.substring(9).trim();
-            if (currentRoom != null) {
-                currentRoom.broadcast("Now Playing: " + songPath);
-            } else {
-                sendMessage("You are not in a room.");
-            }
+        String[] parts = msg.split(" ");
+        String commandName = parts[0];
+
+        Command command = commands.get(commandName);
+        if (command != null) {
+            command.execute(parts, this);
         } else {
             sendMessage("Unknown command.");
         }
@@ -70,5 +73,17 @@ public class ClientHandler implements Runnable {
 
     public void sendMessage(String message) {
         output.println(message);
+    }
+
+    public Room getCurrentRoom() {
+        return currentRoom;
+    }
+
+    public void setCurrentRoom(Room room) {
+        this.currentRoom = room;
+    }
+
+    public ConcurrentHashMap<String, Room> getRooms() {
+        return rooms;
     }
 }

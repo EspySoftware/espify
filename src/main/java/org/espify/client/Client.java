@@ -50,7 +50,7 @@ public class Client {
                 String msg;
                 try {
                     while (!socket.isClosed() && (msg = input.readLine()) != null) {
-                        System.out.println("Server: " + msg);
+                        System.out.println(msg);
                     }
                 } catch (IOException e) {
                     if (!socket.isClosed()) {
@@ -78,7 +78,8 @@ public class Client {
                 }
             }));
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Failed to connect to the server.");
+            System.exit(1);
         }
     }
 

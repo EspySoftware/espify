@@ -15,4 +15,14 @@ public class RoomCommands {
     public void addSong(String songName) {
         Client.sendMessage("addSong " + songName);
     }
+
+    @ShellMethod("Skip the current song")
+    public void skipSong() {
+        Client.sendMessage("skipSong");
+    }
+
+    @ShellMethod("List all songs in the current playlist")
+    public void listSongs() {
+        Client.sendMessage("listSongs");
+    }
 }

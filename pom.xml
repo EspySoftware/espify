@@ -36,11 +36,11 @@
 
 	<dependencies>
         <!-- JLayer for MP3 playback -->
-        <!-- <dependency>
+        <dependency>
             <groupId>javazoom</groupId>
             <artifactId>jlayer</artifactId>
             <version>1.0.1</version>
-        </dependency> -->
+        </dependency>
 
         <!-- Spring Shell for CLI -->
 		<dependency>
