@@ -43,7 +43,7 @@ public class TerminalClient {
                     break;
                 }
                 out.println(input);
-                
+
                 if (input.startsWith("playSong")) {
                     String[] parts = input.split(" ", 2);
                     if (parts.length == 2) {
@@ -71,7 +71,7 @@ public class TerminalClient {
             FileInputStream fis = new FileInputStream(filePath);
             BufferedInputStream bis = new BufferedInputStream(fis);
             Player player = new Player(bis);
-            
+
             // Play in a separate thread to prevent blocking
             new Thread(() -> {
                 try {
@@ -81,7 +81,7 @@ public class TerminalClient {
                     e.printStackTrace();
                 }
             }).start();
-            
+
             System.out.println("Playing: " + filePath);
             return player;
         } catch (Exception e) {

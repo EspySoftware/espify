@@ -1,0 +1,2 @@
+Main-Class: client.TerminalClient
+Class-Path: libs/jl1.0.1.jar

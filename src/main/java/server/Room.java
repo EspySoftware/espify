@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import models.Song;
 
-public class Room implements Runnable {
+public class Room {
     private String name;
     private List<Song> playlist = new ArrayList<>();
     private List<ClientHandler> clients = new ArrayList<>();
@@ -36,10 +36,5 @@ public class Room implements Runnable {
         for (ClientHandler client : clients) {
             client.sendMessage(message);
         }
-    }
-
-    @Override
-    public void run() {
-        // Additional synchronization tasks if needed
     }
 }

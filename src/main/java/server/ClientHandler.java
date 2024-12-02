@@ -56,6 +56,13 @@ public class ClientHandler implements Runnable {
             } else {
                 sendMessage("You are not in a room.");
             }
+        } else if (msg.startsWith("playSong")) {
+            String songPath = msg.substring(9).trim();
+            if (currentRoom != null) {
+                currentRoom.broadcast("Now Playing: " + songPath);
+            } else {
+                sendMessage("You are not in a room.");
+            }
         } else {
             sendMessage("Unknown command.");
         }
