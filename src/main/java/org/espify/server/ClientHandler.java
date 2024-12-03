@@ -5,6 +5,7 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import org.espify.server.commands.*;
+
 import java.util.UUID;
 
 public class ClientHandler implements Runnable {
@@ -30,6 +31,7 @@ public class ClientHandler implements Runnable {
         commands.put("addSong", new AddSongCommand());
         commands.put("skipSong", new SkipSongCommand());
         commands.put("listSongs", new ListSongsCommand());
+        commands.put("listRooms", new ListRoomsCommand());
     }
 
     @Override
@@ -46,7 +48,7 @@ public class ClientHandler implements Runnable {
                 handleMessage(msg);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error handling client: " + e.getMessage());
         } finally {
             // Cleanup on disconnect
             if (currentRoom != null) {

@@ -1,38 +1,21 @@
 spring:
   main:
-    banner-mode: off
+    allow-bean-definition-overriding: true
   shell:
-    script:
-      enabled: true
     interactive:
       enabled: true
-    ## pick global default option naming
-    # option:
-    #   naming:
-    #     case-type: noop
-    #     case-type: camel
-    #     case-type: snake
-    #     case-type: kebab
-    #     case-type: pascal
+    jline:
+      enabled: true
+      ansi: always
+    terminal:
+      type: xterm-256color
     config:
-      env: SPRING_SHELL_SAMPLES_USER_HOME
-      location: "{userconfig}/espify"
-    history:
-      name: espify-history.log
-    command:
-      help:
-        grouping-mode: group
-      completion:
-        root-command: espify
-## disable console logging
+      jansi:
+        enabled: true
+  output:
+    ansi:
+      enabled: always
+
 logging:
   pattern:
-    console:
-## log debug from a cli
-#  file:
-#    name: shell.log
-#  level:
-#    root: debug
-#    org:
-#      springframework:
-#        shell: debug
+    console: "%clr(%d{HH:mm:ss.SSS}){faint} %clr(%level){bright} %clr(${PID:- }){magenta} %clr(---){faint} %clr([%thread]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx"

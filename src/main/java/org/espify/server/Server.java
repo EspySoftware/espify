@@ -26,7 +26,7 @@ public class Server {
                     System.out.println("New control client connected with ID: " + clientHandler.getClientId());
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("Error starting control server: " + e.getMessage());
             }
         }).start();
 
@@ -43,7 +43,7 @@ public class Server {
                         String clientId = idMessage.substring("CLIENT_ID ".length());
                         ClientHandler clientHandler = clients.get(clientId);
                         if (clientHandler != null) {
-                            DataClientHandler dataClientHandler = new DataClientHandler(dataSocket);
+                            DataClientHandler dataClientHandler = new DataClientHandler(dataSocket, clientHandler);
                             clientHandler.setDataClientHandler(dataClientHandler);
                             new Thread(dataClientHandler).start();
                             System.out.println("Data socket associated with client ID: " + clientId);
@@ -57,7 +57,7 @@ public class Server {
                     }
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("Error starting data server: " + e.getMessage());
             }
         }).start();
     }

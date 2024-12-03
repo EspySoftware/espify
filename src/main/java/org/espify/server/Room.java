@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Logger;
 import org.espify.models.Song;
 
@@ -31,6 +32,19 @@ public class Room {
     public synchronized void removeClient(ClientHandler client) {
         clients.remove(client);
         broadcast("A user has left the room.");
+
+        if (clients.isEmpty()) {
+            stopMusicPlayback();
+        }
+    }
+    
+    private void stopMusicPlayback() {
+        // Implement logic to stop the music stream
+        if (currentSong != null) {
+            broadcast("Music playback stopped as the room is now empty.");
+            currentSong = null;
+            playlist.clear();
+        }
     }
 
     // Play the next song in the playlist
@@ -79,21 +93,20 @@ public class Room {
         byte[] buffer = new byte[4096];
         try (FileInputStream fis = new FileInputStream(filePath)) {
             int bytesRead;
-            while ((bytesRead = fis.read(buffer)) != -1) {
+
+            // Read and send the music stream to all clients in the room
+            while ((bytesRead = fis.read(buffer)) != -1 && !clients.isEmpty()) {
                 byte[] dataToSend = Arrays.copyOf(buffer, bytesRead);
-                for (ClientHandler client : clients) {
-                    client.getDataClientHandler().sendMusicStream(dataToSend);
+                for (ClientHandler client : new ArrayList<>(clients)) {
+                    if (clients.contains(client) && client.getDataClientHandler() != null) {
+                        client.getDataClientHandler().sendMusicStream(dataToSend);
+                    }
                 }
-                
-                // Streaming rate control
-                Thread.sleep(50);
-                logger.info("Sent " + bytesRead + " bytes to clients.");
+                Thread.sleep(50); // Control streaming rate
             }
-            logger.info("Finished streaming: " + filePath);
-            playNextSong();
         } catch (IOException | InterruptedException e) {
             logger.severe("Failed to stream music: " + e.getMessage());
-            e.printStackTrace();
+        } finally {
             playNextSong();
         }
     }
@@ -111,5 +124,9 @@ public class Room {
 
     public synchronized Song getCurrentSong() {
         return currentSong;
+    }
+
+    public synchronized int getClientCount() {
+        return clients.size();
     }
 }
