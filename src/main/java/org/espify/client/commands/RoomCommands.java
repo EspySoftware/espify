@@ -12,8 +12,8 @@ public class RoomCommands {
     }
     
     @ShellMethod("Add a song to the current room")
-    public void addSong(String songName) {
-        Client.sendMessage("addSong " + songName);
+    public void addSong(String filePath) {
+        Client.sendMessage("addSong " + filePath);
     }
 
     @ShellMethod("Skip the current song")
@@ -24,5 +24,10 @@ public class RoomCommands {
     @ShellMethod("List all songs in the current playlist")
     public void listSongs() {
         Client.sendMessage("listSongs");
+    }
+
+    @ShellMethod("List all rooms")
+    public void listRooms() {
+        Client.sendMessage("listRooms");
     }
 }

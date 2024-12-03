@@ -4,23 +4,22 @@ import java.io.*;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
-import org.espify.server.commands.AddSongCommand;
-import org.espify.server.commands.Command;
-import org.espify.server.commands.JoinRoomCommand;
-import org.espify.server.commands.ListSongsCommand;
-import org.espify.server.commands.SkipSongCommand;
-import org.espify.server.commands.PlaySongCommand;
+import org.espify.server.commands.*;
+import java.util.UUID;
 
 public class ClientHandler implements Runnable {
-    private Socket socket;
+    private String clientId;
+    private Socket controlSocket;
     private BufferedReader input;
     private PrintWriter output;
+    private DataClientHandler dataClientHandler;
     private ConcurrentHashMap<String, Room> rooms;
     private HashMap<String, Command> commands;
     private Room currentRoom;
 
-    public ClientHandler(Socket socket, ConcurrentHashMap<String, Room> rooms) {
-        this.socket = socket;
+    public ClientHandler(Socket controlSocket, ConcurrentHashMap<String, Room> rooms) {
+        this.clientId = UUID.randomUUID().toString();
+        this.controlSocket = controlSocket;
         this.rooms = rooms;
         initializeCommands();
     }
@@ -29,18 +28,19 @@ public class ClientHandler implements Runnable {
         commands = new HashMap<>();
         commands.put("joinRoom", new JoinRoomCommand());
         commands.put("addSong", new AddSongCommand());
-        commands.put("playSong", new PlaySongCommand());
         commands.put("skipSong", new SkipSongCommand());
-        commands.put("listSongs", new ListSongsCommand()); // Registering the new command
-
+        commands.put("listSongs", new ListSongsCommand());
     }
 
     @Override
     public void run() {
         try {
-            input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            output = new PrintWriter(socket.getOutputStream(), true);
-
+            input = new BufferedReader(new InputStreamReader(controlSocket.getInputStream()));
+            output = new PrintWriter(controlSocket.getOutputStream(), true);
+    
+            // Send the unique client ID to the client
+            sendMessage("CLIENT_ID " + clientId);
+    
             String msg;
             while ((msg = input.readLine()) != null) {
                 handleMessage(msg);
@@ -48,17 +48,18 @@ public class ClientHandler implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            try {
-                socket.close();
-                if (currentRoom != null) {
-                    currentRoom.removeClient(this);
-                }
-                Server.clients.remove(socket.getInetAddress().toString());
-            } catch (IOException e) {
-                e.printStackTrace();
+            // Cleanup on disconnect
+            if (currentRoom != null) {
+                currentRoom.removeClient(this);
             }
+            if (dataClientHandler != null) {
+                dataClientHandler.close();
+            }
+            Server.clients.remove(clientId); // Use clientId as the key
+            System.out.println("Client disconnected: " + controlSocket.getInetAddress());
         }
     }
+
     void handleMessage(String msg) {
         String[] parts = msg.split(" ");
         String commandName = parts[0];
@@ -83,7 +84,19 @@ public class ClientHandler implements Runnable {
         this.currentRoom = room;
     }
 
+    public DataClientHandler getDataClientHandler() {
+        return dataClientHandler;
+    }
+
+    public void setDataClientHandler(DataClientHandler dataClientHandler) {
+        this.dataClientHandler = dataClientHandler;
+    }
+
     public ConcurrentHashMap<String, Room> getRooms() {
         return rooms;
+    }
+
+    public String getClientId() {
+        return clientId;
     }
 }
