@@ -1,4 +1,4 @@
-package utils;
+package org.espify.utils;
 
 import com.github.kiulian.downloader.YoutubeDownloader;
 import com.github.kiulian.downloader.downloader.request.RequestVideoFileDownload;
