@@ -15,6 +15,13 @@
     </properties>
 
     <dependencies>
+    
+        <dependency>
+            <groupId>com.github.sealedtx</groupId>
+            <artifactId>java-youtube-downloader</artifactId>
+            <version>3.2.6</version>
+        </dependency>
+
         <!-- JLayer for MP3 playback -->
         <dependency>
             <groupId>javazoom</groupId>
@@ -43,6 +50,13 @@
             <version>5.2</version>
         </dependency>
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
 
     <build>
         <plugins>

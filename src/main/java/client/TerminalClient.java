@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.Socket;
 import java.util.Scanner;
 import javazoom.jl.player.Player;
+import utils.YouTubeToMp3;
 
 public class TerminalClient {
     private static Player player;
@@ -26,8 +27,6 @@ public class TerminalClient {
                     while ((response = in.readLine()) != null) {
                         System.out.println("Server: " + response);
                         if (response.startsWith("Now Playing:")) {
-                            String songPath = response.substring(12).trim();
-                            playSong(songPath);
                         }
                     }
                 } catch (IOException e) {
@@ -35,7 +34,6 @@ public class TerminalClient {
                 }
             }).start();
 
-            // Main loop to send commands
             while (true) {
                 System.out.print("Enter command (joinRoom <room>, addSong <song>, playSong <path>, or exit): ");
                 String input = scanner.nextLine();
@@ -47,8 +45,13 @@ public class TerminalClient {
                 if (input.startsWith("playSong")) {
                     String[] parts = input.split(" ", 2);
                     if (parts.length == 2) {
-                        String songPath = parts[1].trim();
-                        player = playSong(songPath);
+                        String url = parts[1].trim();
+                        if (url.contains("watch?v=")) {
+                            playSong(url);
+                        }
+                        else{
+                            System.out.println("Invalid URL");
+                        }
                     } else {
                         System.out.println("Usage: playSong <path_to_mp3>");
                     }
@@ -65,10 +68,11 @@ public class TerminalClient {
         }
     }
 
-    // Method to play a song
     private static Player playSong(String filePath) {
         try {
-            FileInputStream fis = new FileInputStream(filePath);
+            String videoid = filePath.split("watch\\?v=")[1].split("&")[0];
+            String[] parts =  YouTubeToMp3.downloadAudio(videoid).split("\\|", 2);
+            FileInputStream fis = new FileInputStream(parts[1]);
             BufferedInputStream bis = new BufferedInputStream(fis);
             Player player = new Player(bis);
 
@@ -82,7 +86,7 @@ public class TerminalClient {
                 }
             }).start();
 
-            System.out.println("Playing: " + filePath);
+            System.out.println("Playing: " + parts[0]);
             return player;
         } catch (Exception e) {
             System.out.println("Unable to play the song.");
