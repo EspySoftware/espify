@@ -4,7 +4,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.logging.Logger;
 import org.espify.models.Song;
 
@@ -38,7 +37,7 @@ public class Room {
         }
     }
     
-    private void stopMusicPlayback() {
+    public void stopMusicPlayback() {
         // Implement logic to stop the music stream
         if (currentSong != null) {
             broadcast("Music playback stopped as the room is now empty.");
@@ -93,7 +92,7 @@ public class Room {
         byte[] buffer = new byte[4096];
         try (FileInputStream fis = new FileInputStream(filePath)) {
             int bytesRead;
-
+    
             // Read and send the music stream to all clients in the room
             while ((bytesRead = fis.read(buffer)) != -1 && !clients.isEmpty()) {
                 byte[] dataToSend = Arrays.copyOf(buffer, bytesRead);

@@ -16,7 +16,7 @@ public class ClientHandler implements Runnable {
     private DataClientHandler dataClientHandler;
     private ConcurrentHashMap<String, Room> rooms;
     private HashMap<String, Command> commands;
-    private Room currentRoom;
+    Room currentRoom;
 
     public ClientHandler(Socket controlSocket, ConcurrentHashMap<String, Room> rooms) {
         this.clientId = UUID.randomUUID().toString();
@@ -57,7 +57,7 @@ public class ClientHandler implements Runnable {
             if (dataClientHandler != null) {
                 dataClientHandler.close();
             }
-            Server.clients.remove(clientId); // Use clientId as the key
+            Server.clients.remove(clientId);
             System.out.println("Client disconnected: " + controlSocket.getInetAddress());
         }
     }

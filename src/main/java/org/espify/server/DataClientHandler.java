@@ -47,6 +47,8 @@ public class DataClientHandler implements Runnable {
             outputStream.flush();
         } catch (IOException e) {
             logger.severe("Error sending music stream: " + e.getMessage());
+            // Stop sending music stream
+            clientHandler.getCurrentRoom().stopMusicPlayback();
         }
     }
 

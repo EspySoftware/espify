@@ -12,7 +12,6 @@ import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -39,11 +38,13 @@ public class Client {
     static final int CONTROL_PORT = 12345;
     static final int DATA_PORT = 12346;
 
+    private Player currentPlayer;
+
 
     public static void main(String[] args) throws Exception {
         // Start the Spring Boot application
         SpringApplication application = new SpringApplication(Client.class);
-        application.setBannerMode(Mode.OFF);
+        // application.setBannerMode(Mode.OFF);
         application.run(args);
     }
 
@@ -55,50 +56,35 @@ public class Client {
 
     @PostConstruct
     public void connectToServer() {
-        // When the application starts, connect to the server
         try {
             // Connect to Control Socket
             controlSocket = new Socket("localhost", CONTROL_PORT);
             controlInput = new BufferedReader(new InputStreamReader(controlSocket.getInputStream()));
             controlOutput = new PrintWriter(controlSocket.getOutputStream(), true);
-
-            // Read client ID from control socket
-            String idMessage = controlInput.readLine();
-            if (idMessage != null && idMessage.startsWith("CLIENT_ID ")) {
-                clientId = idMessage.substring("CLIENT_ID ".length());
-                logger.info("Received client ID: {}", clientId);
-            } else {
-                logger.error("Failed to receive client ID from server.");
-                return;
-            }
-
-            // Connect to Data Socket
-            if (dataSocket == null || dataSocket.isClosed()) {
-                dataSocket = new Socket("localhost", DATA_PORT);
-                dataOutputStream = new PrintWriter(dataSocket.getOutputStream(), true);
-                // Send client ID to server
-                dataOutputStream.println("CLIENT_ID " + clientId);
-                dataInputStream = dataSocket.getInputStream();
-            }
-
-            // Listen for control messages
+    
+            // Send client ID to server
+            controlOutput.println("CLIENT_ID " + clientId);
+    
+            // Start Control Listener Thread for Commands
             Thread controlListenerThread = new Thread(() -> {
                 String msg;
                 try {
-                    while (!controlSocket.isClosed() && (msg = controlInput.readLine()) != null) {
+                    while ((msg = controlInput.readLine()) != null) {
                         handleMessage(msg);
                     }
                 } catch (IOException e) {
-                    if (!controlSocket.isClosed()) {
-                        logger.error("Error reading control message: {}", e.getMessage());
-                    }
+                    logger.error("Error reading control message: {}", e.getMessage());
                 }
             });
-            // Set the thread as a daemon so it will automatically stop when the application stops
             controlListenerThread.setDaemon(true);
             controlListenerThread.start();
-
-            // Start data listener thread for music playback
+    
+            // Connect to Data Socket for Music Streaming
+            dataSocket = new Socket("localhost", DATA_PORT);
+            dataInputStream = dataSocket.getInputStream();
+            dataOutputStream = new PrintWriter(dataSocket.getOutputStream(), true);
+    
+            // Start Data Listener Thread for Music Streaming
             Thread dataListenerThread = new Thread(() -> {
                 try {
                     playMusic(dataInputStream);
@@ -109,20 +95,20 @@ public class Client {
             });
             dataListenerThread.setDaemon(true);
             dataListenerThread.start();
-
+    
             // Add shutdown hook
             Runtime.getRuntime().addShutdownHook(new Thread(this::cleanup));
-
+    
         } catch (IOException e) {
             logger.error("Failed to connect to server: {}", e.getMessage());
         }
     }
     
     @PreDestroy
-    // Cleanup when the application stops
     public void cleanup() {
         try {
             if (controlSocket != null && !controlSocket.isClosed()) {
+                controlOutput.println("exit");
                 controlSocket.close();
             }
             if (dataSocket != null && !dataSocket.isClosed()) {
@@ -140,19 +126,29 @@ public class Client {
         } else if (msg.startsWith("Now Playing: ")) {
             logger.info("Now Playing message received: {}", msg);
             System.out.println(msg);
+        } else if (msg.equals("You have been disconnected.")) {
+            logger.info("Disconnected from the server.");
+            stopMusicPlayback();
         } else {
             logger.info("Message received: {}", msg);
             System.out.println(msg);
         }
     }
+
+    public void stopMusicPlayback() {
+        if (currentPlayer != null) {
+            currentPlayer.close();
+            logger.info("Music playback stopped.");
+        }
+    }
     
     public void playMusic(InputStream musicStream) {
         try {
-            // Create a buffered stream that can handle chunks of data
             BufferedInputStream bufferedStream = new BufferedInputStream(musicStream);
-            Player player = new Player(bufferedStream);
+            currentPlayer = new Player(bufferedStream);
             logger.info("Starting music playback from network stream");
-            player.play(); // This will now play as data arrives
+            currentPlayer.play();
+            logger.info("Music playback completed");
         } catch (JavaLayerException e) {
             logger.error("Error during music playback: {}", e.getMessage());
         }
