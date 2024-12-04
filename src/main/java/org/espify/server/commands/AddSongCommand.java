@@ -4,7 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import org.espify.models.Song;
-import org.espify.server.ClientHandler;
+import org.espify.server.handlers.ClientHandler;
 
 public class AddSongCommand implements Command {
     @Override

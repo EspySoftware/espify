@@ -1,7 +1,7 @@
 package org.espify.server.commands;
 
-import org.espify.server.ClientHandler;
 import org.espify.server.Room;
+import org.espify.server.handlers.ClientHandler;
 import org.espify.models.Song;
 
 import java.util.ArrayList;
