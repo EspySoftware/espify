@@ -1,8 +1,9 @@
 package org.espify.server.commands;
 
 import java.util.concurrent.ConcurrentHashMap;
-import org.espify.server.ClientHandler;
+
 import org.espify.server.Room;
+import org.espify.server.handlers.ClientHandler;
 
 public class ListRoomsCommand implements Command {
     @Override

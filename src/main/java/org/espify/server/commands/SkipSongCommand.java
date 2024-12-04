@@ -1,6 +1,6 @@
 package org.espify.server.commands;
 
-import org.espify.server.ClientHandler;
+import org.espify.server.handlers.ClientHandler;
 
 public class SkipSongCommand implements Command {
     @Override
