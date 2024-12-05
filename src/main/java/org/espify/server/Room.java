@@ -46,9 +46,10 @@ public class Room {
     public void stopMusicPlayback() {
         // Implement logic to stop the music stream
         if (currentSong != null) {
-            broadcast("Music playback stopped as the room is now empty.");
+            broadcast("Music playback stopped (room is empty).");
             currentSong = null;
-            playlist.clear();
+            isPlaying = false;
+            // Additional logic to stop streaming if necessary
         }
     }
 
@@ -82,30 +83,79 @@ public class Room {
         if (audioHandler != null) {
             audioHandler.setStreaming(false);
         }
-        
+
         playNextSong();
     }
     
     public synchronized void playSong(Song song) {
-        isPlaying = true;
-        currentSong = song;
-        playlist.remove(song); // Now safe to remove
-        broadcast("Now Playing: " + currentSong.getName());
-        logger.info("Now Playing: " + song.getName());
+        if (isPlaying) {
+            broadcast("Music is already playing.");
+            return;
+        }
 
-        try {
-            AudioClientHandler audioHandler = getAudioClientHandler();
-            if (audioHandler != null) {
-                audioHandler.streamSongAsync(currentSong.getFilePath());
-            } else {
-                logger.severe("Audio handler not available.");
-                broadcast("Error: Audio handler not available.");
-            }
-        } catch (Exception e) {
-            broadcast("Error streaming song: " + e.getMessage());
-            logger.severe("Error streaming song: " + e.getMessage());
+        currentSong = song;
+        isPlaying = true;
+        long timestamp = System.currentTimeMillis() + 1000; // 1-second delay for synchronization
+        broadcastWithTimestamp("play", timestamp);
+
+        // Start streaming the song
+        AudioClientHandler audioHandler = getAudioClientHandler();
+        if (audioHandler != null) {
+            audioHandler.streamSongAsync(currentSong.getFilePath());
+            logger.info("Started playing song: " + currentSong.getName());
+        } else {
+            broadcast("Error: Audio handler not available.");
             isPlaying = false;
         }
+    }
+
+    public synchronized void pauseSong() {
+        if (!isPlaying) {
+            broadcast("Music is not playing.");
+            return;
+        }
+    
+        isPlaying = false;
+        long timestamp = System.currentTimeMillis() + 1000; // 1-second delay for synchronization
+        broadcastWithTimestamp("pause", timestamp);
+    
+        AudioClientHandler audioHandler = getAudioClientHandler();
+        if (audioHandler != null) {
+            audioHandler.pauseStreaming();
+            logger.info("Paused song: " + currentSong.getName());
+        } else {
+            broadcast("Error: Audio handler not available.");
+        }
+    }
+
+    public synchronized void resumeSong() {
+        if (isPlaying) {
+            broadcast("Music is already playing.");
+            return;
+        }
+
+        isPlaying = true;
+        long timestamp = System.currentTimeMillis() + 1000; // 1-second delay for synchronization
+        broadcastWithTimestamp("play", timestamp);
+
+        // Resume the streaming
+        AudioClientHandler audioHandler = getAudioClientHandler();
+        if (audioHandler != null) {
+            audioHandler.resumeStreaming();
+            logger.info("Resumed song: " + currentSong.getName());
+        } else {
+            broadcast("Error: Audio handler not available.");
+            isPlaying = false;
+        }
+    }
+
+    // Broadcast a message with a timestamp for synchronization
+    private synchronized void broadcastWithTimestamp(String action, long timestamp) {
+        String message = action + " " + timestamp;
+        for (ClientHandler client : clients) {
+            client.sendMessage(message);
+        }
+        logger.info("Broadcasted action: " + message + " to all clients in room: " + name);
     }
 
     // Broadcast a message to all clients in the room
@@ -113,6 +163,7 @@ public class Room {
         for (ClientHandler client : clients) {
             client.sendMessage(message);
         }
+        logger.info("Broadcasted message: " + message + " to all clients in room: " + name);
     }
 
     public synchronized ArrayList<Song> getPlaylist() {

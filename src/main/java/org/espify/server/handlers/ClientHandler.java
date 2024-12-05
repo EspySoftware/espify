@@ -1,12 +1,7 @@
 package org.espify.server.handlers;
 
 import org.espify.server.Server;
-import org.espify.server.commands.AddSongCommand;
-import org.espify.server.commands.Command;
-import org.espify.server.commands.JoinRoomCommand;
-import org.espify.server.commands.ListRoomsCommand;
-import org.espify.server.commands.ListSongsCommand;
-import org.espify.server.commands.SkipSongCommand;
+import org.espify.server.commands.*;
 import org.espify.server.Room;
 
 import java.io.BufferedReader;
@@ -55,6 +50,8 @@ public class ClientHandler implements Runnable {
         commands.put("skip", new SkipSongCommand());
         commands.put("ls", new ListSongsCommand());
         commands.put("lr", new ListRoomsCommand());
+        commands.put("resume", new ResumeCommand());
+        commands.put("pause", new PauseCommand());
     }
 
     public void setAudioSocket(Socket audioSocket) {
@@ -80,7 +77,8 @@ public class ClientHandler implements Runnable {
             }
             try {
                 controlSocket.close();
-                if (audioSocket != null) {
+                // Only close audio socket if disconnecting, not on pause
+                if (audioSocket != null && audioSocket.isClosed()) {
                     audioClientHandler.close();
                 }
             } catch (IOException e) {
