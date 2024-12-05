@@ -22,7 +22,7 @@ public class AddSongCommand implements Command {
         String downloadResult = YTDownloadAPI.DownloadAudio(query);
 
         // The result is a string with the song name and the file path separated by a pipe
-        String[] parts = downloadResult.split("☻");
+        String[] parts = downloadResult.split("•");
         String songName = parts[0];
         String filePath = parts[1];
 
