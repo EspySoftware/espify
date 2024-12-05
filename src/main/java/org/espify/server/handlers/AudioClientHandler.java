@@ -20,7 +20,6 @@ public class AudioClientHandler implements Runnable {
     public AudioClientHandler(ClientHandler clientHandler, Socket socket) {
         this.clientHandler = clientHandler;
         this.socket = socket;
-        
         try {
             this.audioOut = new DataOutputStream(socket.getOutputStream());
         } catch (IOException e) {
@@ -31,12 +30,12 @@ public class AudioClientHandler implements Runnable {
     @Override
     public void run() {
         logger.info("AudioClientHandler for client ID {} started.", clientHandler.getClientID());
-        // Keep the thread alive
         while (!socket.isClosed()) {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 logger.error("AudioClientHandler thread interrupted: {}", e.getMessage());
+                Thread.currentThread().interrupt();
                 break;
             }
         }
@@ -54,10 +53,13 @@ public class AudioClientHandler implements Runnable {
             } catch (IOException | JavaLayerException e) {
                 logger.error("Error streaming song to client ID {}: {}", clientHandler.getClientID(), e.getMessage());
                 clientHandler.sendMessage("Error streaming song: " + e.getMessage());
-            } finally {
                 streaming = false;
             }
         }).start();
+    }
+
+    public void setStreaming(boolean streaming) {
+        this.streaming = streaming;
     }
 
     private void streamSong(String filePath) throws IOException, JavaLayerException {
@@ -81,15 +83,10 @@ public class AudioClientHandler implements Runnable {
         fis.close();
     }
 
-    public void sendAudioData(byte[] data, int length) {
-        try {
-            audioOut.write(data, 0, length);
-            audioOut.flush();
-            logger.info("Sent {} bytes of audio data to client ID: {}", length, clientHandler.getClientID());
-        } catch (IOException e) {
-            logger.error("Error sending audio data to client ID {}: {}", clientHandler.getClientID(), e.getMessage());
-            streaming = false;
-        }
+    public void sendAudioData(byte[] data, int length) throws IOException {
+        audioOut.write(data, 0, length);
+        audioOut.flush();
+        logger.info("Sent {} bytes of audio data to client ID: {}", length, clientHandler.getClientID());
     }
 
     public void close() {

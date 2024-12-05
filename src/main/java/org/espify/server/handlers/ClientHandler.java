@@ -88,16 +88,29 @@ public class ClientHandler implements Runnable {
             }
         }
     }
-
+    
     void handleMessage(String msg) {
         String[] parts = msg.split(" ");
         String commandName = parts[0];
-
+    
+        if (commandName.equals("playbackComplete")) {
+            handlePlaybackComplete();
+            System.out.println("Playback complete.");
+            return;
+        }
+    
         Command command = commands.get(commandName);
         if (command != null) {
             command.execute(parts, this);
         } else {
             sendMessage("Unknown command.");
+        }
+    }
+    
+    private void handlePlaybackComplete() {
+        Room currentRoom = getCurrentRoom();
+        if (currentRoom != null) {
+            currentRoom.onPlaybackComplete();
         }
     }
     

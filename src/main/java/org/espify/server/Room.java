@@ -55,14 +55,15 @@ public class Room {
     // Add a song and start playing if no song is currently playing
     public synchronized void addSong(Song song) {
         playlist.add(song);
-        broadcast("New song added: " + song.getName());
-        logger.info("New song added: " + song.getName());
-        if (currentSong == null || !isPlaying) {
+        broadcast("Added song: " + song.getName());
+        logger.info("Added song: " + song.getName());
+
+        if (!isPlaying) {
             playNextSong();
         }
     }
 
-    public void playNextSong() {
+    public synchronized void playNextSong() {
         if (!playlist.isEmpty()) {
             Song nextSong = playlist.get(0);
             playSong(nextSong);
@@ -72,15 +73,27 @@ public class Room {
             currentSong = null;
         }
     }
+
+    public void onPlaybackComplete() {
+        isPlaying = false;
+        AudioClientHandler audioHandler = getAudioClientHandler();
+
+        // Stop streaming the song to the client if it has finished playing
+        if (audioHandler != null) {
+            audioHandler.setStreaming(false);
+        }
+        
+        playNextSong();
+    }
     
-    public void playSong(Song song) {
+    public synchronized void playSong(Song song) {
+        isPlaying = true;
         currentSong = song;
         playlist.remove(song); // Now safe to remove
         broadcast("Now Playing: " + currentSong.getName());
         logger.info("Now Playing: " + song.getName());
 
         try {
-            // Delegate streaming to AudioClientHandler
             AudioClientHandler audioHandler = getAudioClientHandler();
             if (audioHandler != null) {
                 audioHandler.streamSongAsync(currentSong.getFilePath());
@@ -88,20 +101,10 @@ public class Room {
                 logger.severe("Audio handler not available.");
                 broadcast("Error: Audio handler not available.");
             }
-
-            if (!playlist.isEmpty()) {
-                playNextSong();
-            } else {
-                currentSong = null;
-            }
         } catch (Exception e) {
             broadcast("Error streaming song: " + e.getMessage());
             logger.severe("Error streaming song: " + e.getMessage());
-            if (!playlist.isEmpty()) {
-                playNextSong();
-            } else {
-                currentSong = null;
-            }
+            isPlaying = false;
         }
     }
 

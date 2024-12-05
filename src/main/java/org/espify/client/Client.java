@@ -78,7 +78,7 @@ public class Client {
             // Start Audio Listener Thread
             audioReceiver = new AudioReceiver(audioInputStream);
             Thread audioListenerThread = new Thread(audioReceiver);
-            
+
             audioListenerThread.setDaemon(true);
             audioListenerThread.start();
     

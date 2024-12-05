@@ -24,6 +24,8 @@ public class AudioReceiver implements Runnable {
             // Initialize the player with the incoming audio stream
             player = new Player(audioIn);
             player.play();
+
+            Client.sendMessage("playbackComplete");
         } catch (JavaLayerException e) {
             logger.error("Error receiving audio data: " + e.getMessage());
         }
