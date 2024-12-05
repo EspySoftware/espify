@@ -7,6 +7,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.UUID;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStyle;
@@ -76,7 +78,7 @@ public class Client {
             logger.info("Sent client ID to audio server: {}", clientID);
     
             // Start Audio Listener Thread
-            audioReceiver = new AudioReceiver(audioInputStream);
+            audioReceiver = new AudioReceiver(audioInputStream, this);
             Thread audioListenerThread = new Thread(audioReceiver);
 
             audioListenerThread.setDaemon(true);
@@ -130,7 +132,31 @@ public class Client {
     }
 
     void handleMessage(String msg) {
-        if (msg.equals("You have been disconnected.")) {
+        String[] parts = msg.split(" ");
+        String command = parts[0];
+
+        if (command.equals("play")) {
+            if (parts.length < 2) {
+                System.out.println("Invalid play command received.");
+                return;
+            }
+            long timestamp = Long.parseLong(parts[1]);
+            long currentTime = System.currentTimeMillis();
+            long delay = timestamp - currentTime;
+            if (delay > 0) {
+                // Schedule the play action
+                new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        audioReceiver.play();
+                    }
+                }, delay);
+            } else {
+                audioReceiver.play();
+            }
+        } else if (command.equals("pause")) {
+            audioReceiver.pause();
+        } else if (msg.equals("You have been disconnected.")) {
             logger.info("Disconnected from the server.");
             System.exit(0);
         } else {
@@ -141,5 +167,9 @@ public class Client {
     public static void sendMessage(String message) {
         // logger.info("Sending message: {}", message);
         controlOutput.println(message);
+    }
+
+    public String getClientID() {
+        return clientID;
     }
 }

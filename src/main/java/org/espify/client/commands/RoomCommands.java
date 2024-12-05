@@ -30,4 +30,14 @@ public class RoomCommands {
     public void lr() {
         Client.sendMessage("lr");
     }
+
+    @ShellMethod("Pause the current song")
+    public void pause() {
+        Client.sendMessage("pause");
+    }
+
+    @ShellMethod("Resume the current song")
+    public void resume() {
+        Client.sendMessage("resume");
+    }
 }
