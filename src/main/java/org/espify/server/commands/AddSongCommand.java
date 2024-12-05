@@ -2,6 +2,7 @@ package org.espify.server.commands;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 import org.espify.models.Song;
 import org.espify.server.handlers.ClientHandler;
@@ -16,15 +17,19 @@ public class AddSongCommand implements Command {
         }
         
         // Get the youtube url or keywords
-        String query = args[1].trim();
+        clientHandler.sendMessage("Arguments: " + Arrays.toString(args));
+        String query = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+        
+        clientHandler.sendMessage(query);
 
         // This function treats the query as a youtube url or keywords
         String downloadResult = YTDownloadAPI.DownloadAudio(query);
 
         // The result is a string with the song name and the file path separated by a pipe
-        String[] parts = downloadResult.split("☻");
+        String[] parts = downloadResult.split("•");
         String songName = parts[0];
         String filePath = parts[1];
+
 
         // Check if the file exists
         if (!Files.exists(Paths.get(filePath))) {

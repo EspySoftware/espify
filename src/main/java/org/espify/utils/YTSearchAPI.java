@@ -17,7 +17,7 @@ public class YTSearchAPI {
 
     public static void main(String[] args) {
         try {
-            System.out.println(Search("Ishas song"));
+            System.out.println(Search("bebecita"));
         } catch (GeneralSecurityException | IOException e) {
             e.printStackTrace();
         }
@@ -36,9 +36,11 @@ public class YTSearchAPI {
                 .list("snippet")
                 .setQ(keywords) // Palabras clave de búsqueda
                 .setType("video") // Solo buscar videos
-                .setVideoDuration("medium") // Duración del video 
                 .setMaxResults(1L) // Limitar resultados
+                .setVideoCategoryId("10") // Categoria de videos (Música)
+                .setSafeSearch("moderate") // Filtro de busqueda
                 .setKey(API_KEY); // Agregar la clave de API
+                
 
         SearchListResponse response = request.execute();
 

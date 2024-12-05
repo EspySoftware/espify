@@ -15,7 +15,7 @@ import java.util.List;
 public class YTDownloadAPI {
     public static void main(String[] args) {
         try {
-            System.out.println(DownloadAudio("Despacito"));
+            System.out.println(DownloadAudio("menea"));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -32,11 +32,11 @@ public class YTDownloadAPI {
             VideoInfo videoInfo = response.data();
             VideoDetails details = videoInfo.details();
 
-            String sanitizedTitle = details.title().replaceAll("[^a-zA-Z0-9\\.\\-]", "_");
+            String sanitizedTitle = details.title().replaceAll("[^a-zA-Z0-9\\.\\-]", "");
 
             File existingMp3 = findExistingMp3(outputDir, sanitizedTitle);
             if (existingMp3 != null) {
-                exit = details.title() + "|" + existingMp3.getAbsolutePath();
+                exit = details.title() + "•" + existingMp3.getAbsolutePath();
                 return exit;
             }
 
@@ -61,7 +61,7 @@ public class YTDownloadAPI {
             // Descarga el archivo de audio
             File downloadedFile = downloader.downloadVideoFile(downloadRequest).data();
             outputDir = convertToMp3(downloadedFile);
-            exit = details.title() + "☻" + outputDir.getAbsolutePath();
+            exit = details.title() + "•" + outputDir.getAbsolutePath();
         } catch (Exception e) {
             System.err.println("Error al descargar el video: " + e.getMessage());
             e.printStackTrace();
