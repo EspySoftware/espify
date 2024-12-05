@@ -20,6 +20,11 @@ public class JoinRoomCommand implements Command {
             clientHandler.sendMessage("Left room: " + currentRoom.getName());
         }
 
+        // Stop the music stream if the room is now empty
+        if (currentRoom != null && currentRoom.getClients().isEmpty()) {
+            currentRoom.stopMusicPlayback();
+        }
+
         // Join the new room
         Room newRoom = clientHandler.getRooms().computeIfAbsent(roomName, Room::new);
         newRoom.addClient(clientHandler);

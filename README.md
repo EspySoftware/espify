@@ -4,6 +4,8 @@
 ```bash
 ./mvnw clean install
 java -jar target/espify-1.0.jar
+    o
+./start_terminal_client.bat
 ```
 
 ```bash

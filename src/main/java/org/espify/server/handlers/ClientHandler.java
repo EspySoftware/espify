@@ -18,13 +18,12 @@ import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-
 public class ClientHandler implements Runnable {
     private String clientID;
     private Socket controlSocket;
     private Socket audioSocket;
 
-    public AudioClientHandler audioClientHandler;
+    private AudioClientHandler audioClientHandler;
     
     private PrintWriter output;
     private BufferedReader input;
@@ -36,7 +35,6 @@ public class ClientHandler implements Runnable {
         this.clientID = UUID.randomUUID().toString();
         this.controlSocket = controlSocket;
 
-        // Initialize control streams
         try {
             this.output = new PrintWriter(controlSocket.getOutputStream(), true);
             this.input = new BufferedReader(new InputStreamReader(controlSocket.getInputStream()));
@@ -58,14 +56,12 @@ public class ClientHandler implements Runnable {
         commands.put("ls", new ListSongsCommand());
         commands.put("lr", new ListRoomsCommand());
     }
-    
+
     public void setAudioSocket(Socket audioSocket) {
         this.audioSocket = audioSocket;
         this.audioClientHandler = new AudioClientHandler(this, audioSocket);
-        Server.clients.put(clientID, this);
-
         new Thread(audioClientHandler).start();
-        System.out.println("Audio client handler started for client ID: " + clientID);
+        System.out.println("AudioClientHandler started for client ID: " + clientID);
     }
 
     @Override
@@ -85,23 +81,36 @@ public class ClientHandler implements Runnable {
             try {
                 controlSocket.close();
                 if (audioSocket != null) {
-                    audioSocket.close();
+                    audioClientHandler.close();
                 }
             } catch (IOException e) {
                 System.out.println("Error closing sockets: " + e.getMessage());
             }
         }
     }
- 
+    
     void handleMessage(String msg) {
         String[] parts = msg.split(" ");
         String commandName = parts[0];
-
+    
+        if (commandName.equals("playbackComplete")) {
+            handlePlaybackComplete();
+            System.out.println("Playback complete.");
+            return;
+        }
+    
         Command command = commands.get(commandName);
         if (command != null) {
             command.execute(parts, this);
         } else {
             sendMessage("Unknown command.");
+        }
+    }
+    
+    private void handlePlaybackComplete() {
+        Room currentRoom = getCurrentRoom();
+        if (currentRoom != null) {
+            currentRoom.onPlaybackComplete();
         }
     }
     

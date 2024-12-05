@@ -1,16 +1,12 @@
 package org.espify.server;
 
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Logger;
 import org.espify.models.Song;
+import org.espify.server.handlers.AudioClientHandler;
 import org.espify.server.handlers.ClientHandler;
-
-import javazoom.jl.decoder.JavaLayerException;
 
 public class Room {
     private static final Logger logger = Logger.getLogger(Room.class.getName());
@@ -59,16 +55,17 @@ public class Room {
     // Add a song and start playing if no song is currently playing
     public synchronized void addSong(Song song) {
         playlist.add(song);
-        broadcast("New song added: " + song.getName());
-        logger.info("New song added: " + song.getName());
-        if (currentSong == null || !isPlaying) {
+        broadcast("Added song: " + song.getName());
+        logger.info("Added song: " + song.getName());
+
+        if (!isPlaying) {
             playNextSong();
         }
     }
 
     public synchronized void playNextSong() {
         if (!playlist.isEmpty()) {
-            Song nextSong = playlist.get(0); // Get without removing
+            Song nextSong = playlist.get(0);
             playSong(nextSong);
         } else {
             broadcast("No more songs in the playlist.");
@@ -76,54 +73,40 @@ public class Room {
             currentSong = null;
         }
     }
+
+    public void onPlaybackComplete() {
+        isPlaying = false;
+        AudioClientHandler audioHandler = getAudioClientHandler();
+
+        // Stop streaming the song to the client if it has finished playing
+        if (audioHandler != null) {
+            audioHandler.setStreaming(false);
+        }
+        
+        playNextSong();
+    }
     
     public synchronized void playSong(Song song) {
+        isPlaying = true;
         currentSong = song;
         playlist.remove(song); // Now safe to remove
         broadcast("Now Playing: " + currentSong.getName());
-        logger.info("Now Playing: " + currentSong.getName());
-        
+        logger.info("Now Playing: " + song.getName());
+
         try {
-            streamSong(currentSong.getFilePath());
-            
-            if (!playlist.isEmpty()) {
-                playNextSong();
+            AudioClientHandler audioHandler = getAudioClientHandler();
+            if (audioHandler != null) {
+                audioHandler.streamSongAsync(currentSong.getFilePath());
             } else {
-                currentSong = null;
+                logger.severe("Audio handler not available.");
+                broadcast("Error: Audio handler not available.");
             }
-        } catch (IOException | JavaLayerException e) {
+        } catch (Exception e) {
             broadcast("Error streaming song: " + e.getMessage());
             logger.severe("Error streaming song: " + e.getMessage());
-            if (!playlist.isEmpty()) {
-                playNextSong();
-            } else {
-                currentSong = null;
-            }
+            isPlaying = false;
         }
     }
-
-    private void streamSong(String filePath) throws IOException, JavaLayerException {
-        FileInputStream fis = new FileInputStream(filePath);
-        BufferedInputStream bis = new BufferedInputStream(fis);
-        byte[] buffer = new byte[4096];
-        int bytesRead;
-    
-        while ((bytesRead = bis.read(buffer)) != -1) {
-            for (ClientHandler client : clients) {
-                client.getAudioClientHandler().sendAudioData(buffer, bytesRead);
-            }
-            // Adjust sleep time based on buffer size and bitrate
-            try {
-                Thread.sleep(100); // Example delay, adjust as needed
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    
-        bis.close();
-        fis.close();
-    }
-    
 
     // Broadcast a message to all clients in the room
     public synchronized void broadcast(String message) {
@@ -150,5 +133,14 @@ public class Room {
 
     public synchronized int getClientCount() {
         return clients.size();
+    }
+
+    private AudioClientHandler getAudioClientHandler() {
+        for (ClientHandler client : clients) {
+            if (client.getCurrentRoom() == this) {
+                return client.getAudioClientHandler();
+            }
+        }
+        return null;
     }
 }
