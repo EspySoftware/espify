@@ -2,3 +2,7 @@
 1733264158623:help
 1733264164274:clear
 1733264171589:quit
+1733265934286:join-room test
+1733265980473:add song C:\\Users\\cespe\\Downloads\\RetroDealership.mp3
+1733265992738:add-song C:\\Users\\cespe\\Downloads\\RetroDealership.mp3
+1733266007971:add-song "C:\\Users\\cespe\\Downloads\\RetroDealership.mp3"
