@@ -8,17 +8,23 @@ import com.github.kiulian.downloader.model.videos.VideoDetails;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
 import com.github.kiulian.downloader.model.videos.formats.AudioFormat;
 
+import org.espify.utils.YTSearchAPI;
 import java.io.File;
 import java.util.List;
 
-public class YouTubeToMp3 {
+public class YTDownloadAPI {
     public static void main(String[] args) {
-        String song;
-        song =  downloadAudio("9W6AN_eQeZo");
+        try {
+            System.out.println(DownloadAudio("Despacito"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
-    public static String downloadAudio(String videoId) {
+
+    public static String DownloadAudio(String videoId) {
         YoutubeDownloader downloader = new YoutubeDownloader();
         File outputDir = new File("downloads");
+        videoId = ProcessString(videoId);
         String exit = "";
         try {
             RequestVideoInfo request = new RequestVideoInfo(videoId);
@@ -27,7 +33,7 @@ public class YouTubeToMp3 {
             VideoDetails details = videoInfo.details();
 
             String sanitizedTitle = details.title().replaceAll("[^a-zA-Z0-9\\.\\-]", "_");
-            
+
             File existingMp3 = findExistingMp3(outputDir, sanitizedTitle);
             if (existingMp3 != null) {
                 exit = details.title() + "|" + existingMp3.getAbsolutePath();
@@ -48,14 +54,14 @@ public class YouTubeToMp3 {
 
             // Crea la solicitud de descarga
             RequestVideoFileDownload downloadRequest = new RequestVideoFileDownload(bestAudioFormat)
-                .saveTo(outputDir) 
-                .renameTo(sanitizedTitle) 
-                .overwriteIfExists(true);   
-            
+                    .saveTo(outputDir)
+                    .renameTo(sanitizedTitle)
+                    .overwriteIfExists(true);
+
             // Descarga el archivo de audio
             File downloadedFile = downloader.downloadVideoFile(downloadRequest).data();
             outputDir = convertToMp3(downloadedFile);
-            exit = details.title() + "|" + outputDir.getAbsolutePath();
+            exit = details.title() + "☻" + outputDir.getAbsolutePath();
         } catch (Exception e) {
             System.err.println("Error al descargar el video: " + e.getMessage());
             e.printStackTrace();
@@ -69,12 +75,12 @@ public class YouTubeToMp3 {
             String outputFileName = inputFile.getAbsolutePath().replace(".m4a", ".mp3");
             outputFile = new File(outputFileName);
             ProcessBuilder builder = new ProcessBuilder(
-                "ffmpeg", "-i", inputFile.getAbsolutePath(), outputFileName);
-            
+                    "ffmpeg", "-i", inputFile.getAbsolutePath(), outputFileName);
+
             // Redirect output and error streams to avoid writing to the terminal
             builder.redirectOutput(ProcessBuilder.Redirect.DISCARD);
             builder.redirectError(ProcessBuilder.Redirect.DISCARD);
-            
+
             builder.start().waitFor();
         } catch (Exception e) {
             System.err.println("Error al convertir el archivo a MP3: " + e.getMessage());
@@ -90,5 +96,21 @@ public class YouTubeToMp3 {
             return potentialMp3;
         }
         return null;
+    }
+
+    public static String ProcessString(String query) {
+        String videoId = "Error";
+        if (query.contains("watch?v=")) {
+            return query.split("watch\\?v=")[1].split("&")[0];
+        } else if (query.contains("youtu.be/")) {
+            return query.split("youtu\\.be/")[1].split("\\?")[0];
+        } else {
+            try {
+                return YTSearchAPI.Search(query);
+            } catch (Exception e) {
+                System.err.println("Error al buscar el video: " + e.getMessage());
+            }
+        }
+        return videoId;
     }
 }

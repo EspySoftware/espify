@@ -5,6 +5,7 @@ import java.nio.file.Paths;
 
 import org.espify.models.Song;
 import org.espify.server.handlers.ClientHandler;
+import org.espify.utils.YTDownloadAPI;
 
 public class AddSongCommand implements Command {
     @Override
@@ -13,8 +14,17 @@ public class AddSongCommand implements Command {
             clientHandler.sendMessage("Usage: addSong <filePath>");
             return;
         }
-        String filePath = args[1].trim();
-        String songName = filePath;
+        
+        // Get the youtube url or keywords
+        String query = args[1].trim();
+
+        // This function treats the query as a youtube url or keywords
+        String downloadResult = YTDownloadAPI.DownloadAudio(query);
+
+        // The result is a string with the song name and the file path separated by a pipe
+        String[] parts = downloadResult.split("☻");
+        String songName = parts[0];
+        String filePath = parts[1];
 
         // Check if the file exists
         if (!Files.exists(Paths.get(filePath))) {

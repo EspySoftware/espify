@@ -35,7 +35,35 @@
 	</properties>
 
 	<dependencies>
-    
+
+		<!-- Cliente HTTP de Google -->
+		<dependency>
+			<groupId>com.google.http-client</groupId>
+			<artifactId>google-http-client</artifactId>
+			<version>1.42.0</version>
+		</dependency>
+
+		<!-- Google API Services para YouTube -->
+		<dependency>
+			<groupId>com.google.apis</groupId>
+			<artifactId>google-api-services-youtube</artifactId>
+			<version>v3-rev222-1.25.0</version>
+		</dependency>
+
+		<!-- Cliente JSON de Google -->
+		<dependency>
+			<groupId>com.google.http-client</groupId>
+			<artifactId>google-http-client-jackson2</artifactId>
+			<version>1.42.0</version>
+		</dependency>
+
+		<!-- Transporte HTTP seguro de Google -->
+		<dependency>
+			<groupId>com.google.http-client</groupId>
+			<artifactId>google-http-client-apache-v2</artifactId>
+			<version>1.42.0</version>
+		</dependency>
+
         <dependency>
             <groupId>com.github.sealedtx</groupId>
             <artifactId>java-youtube-downloader</artifactId>
@@ -116,6 +144,11 @@
 
 	
     <repositories>
+		 <repository>
+			<id>google-api-services</id>
+			<url>https://maven-central.storage-download.googleapis.com/repos/central/data/</url>
+		</repository>
+		
         <repository>
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>
