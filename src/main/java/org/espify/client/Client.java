@@ -53,11 +53,10 @@ public class Client {
             AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN));
     }
 
-    @PostConstruct
-    public void connectToServer() {
+    public void connectToServer(String serverIp) {
         try {
             // Connect to Control Socket
-            controlSocket = new Socket("localhost", CONTROL_PORT);
+            controlSocket = new Socket(serverIp, CONTROL_PORT);
             controlInput = new BufferedReader(new InputStreamReader(controlSocket.getInputStream()));
             controlOutput = new PrintWriter(controlSocket.getOutputStream(), true);
     
@@ -69,7 +68,7 @@ public class Client {
             }
     
             // Connect to Audio Socket after receiving client ID
-            audioSocket = new Socket("localhost", AUDIO_PORT);
+            audioSocket = new Socket(serverIp, AUDIO_PORT);
             audioInputStream = new DataInputStream(audioSocket.getInputStream());
             audioOutput = new PrintWriter(audioSocket.getOutputStream(), true);
     
@@ -101,6 +100,16 @@ public class Client {
             Runtime.getRuntime().addShutdownHook(new Thread(this::cleanup));
         } catch (IOException e) {
             logger.error("Failed to connect to server: {}", e.getMessage());
+        }
+    }
+
+    public void disconnectFromServer() {
+        try {
+            controlOutput.println("exit");
+            controlSocket.close();
+            audioSocket.close();
+        } catch (IOException e) {
+            logger.error("Error disconnecting from server: {}", e.getMessage());
         }
     }
     
