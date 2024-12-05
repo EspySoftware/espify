@@ -18,7 +18,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.shell.command.annotation.CommandScan;
 import org.springframework.shell.jline.PromptProvider;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
 @SpringBootApplication
@@ -79,6 +78,7 @@ public class Client {
             // Start Audio Listener Thread
             audioReceiver = new AudioReceiver(audioInputStream);
             Thread audioListenerThread = new Thread(audioReceiver);
+            
             audioListenerThread.setDaemon(true);
             audioListenerThread.start();
     
