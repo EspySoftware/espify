@@ -101,4 +101,14 @@ public class AudioClientHandler implements Runnable {
     public String getClientID() {
         return clientHandler.getClientID();
     }
+
+    public void pauseStreaming() {
+        streaming = false;
+        logger.info("Paused streaming for client ID: {}", clientHandler.getClientID());
+    }
+
+    public void resumeStreaming() {
+        streaming = true;
+        logger.info("Resumed streaming for client ID: {}", clientHandler.getClientID());
+    }
 }

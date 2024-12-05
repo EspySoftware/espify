@@ -16,4 +16,12 @@ public class TerminalCommands {
         terminal.puts(org.jline.utils.InfoCmp.Capability.clear_screen);
         terminal.flush();
     }
+
+    @ShellMethod(key = "help", value = "Display help")
+    public void help() {
+        terminal.writer().println("Available commands:");
+        terminal.writer().println("clear - Clear the screen");
+        terminal.writer().println("help - Display help");
+        terminal.flush();
+    }
 }
