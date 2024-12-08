@@ -16,6 +16,8 @@ public class AudioClientHandler implements Runnable {
     private Socket socket;
     private DataOutputStream audioOut;
     private volatile boolean streaming = false;
+    private volatile boolean paused = false;
+
 
     public AudioClientHandler(ClientHandler clientHandler, Socket socket) {
         this.clientHandler = clientHandler;
@@ -63,24 +65,21 @@ public class AudioClientHandler implements Runnable {
     }
 
     private void streamSong(String filePath) throws IOException, JavaLayerException {
-        FileInputStream fis = new FileInputStream(filePath);
-        BufferedInputStream bis = new BufferedInputStream(fis);
-        byte[] buffer = new byte[4096];
-        int bytesRead;
+        try (FileInputStream fis = new FileInputStream(filePath);
+            BufferedInputStream bis = new BufferedInputStream(fis)) {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
 
-        while ((bytesRead = bis.read(buffer)) != -1 && streaming) {
-            sendAudioData(buffer, bytesRead);
-            try {
-                Thread.sleep(100); // Adjust based on bitrate and buffer size
-            } catch (InterruptedException e) {
-                logger.error("Streaming interrupted: {}", e.getMessage());
-                Thread.currentThread().interrupt();
-                break;
+            while ((bytesRead = bis.read(buffer)) != -1 && streaming && !paused) {
+                sendAudioData(buffer, bytesRead);
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
             }
         }
-
-        bis.close();
-        fis.close();
     }
 
     public void sendAudioData(byte[] data, int length) throws IOException {
@@ -104,7 +103,13 @@ public class AudioClientHandler implements Runnable {
 
     public void pauseStreaming() {
         streaming = false;
-        logger.info("Paused streaming for client ID: {}", clientHandler.getClientID());
+        paused = true;
+        // Clear output buffer
+        try {
+            audioOut.flush();
+        } catch (IOException e) {
+            logger.error("Error flushing audio buffer: {}", e.getMessage());
+        }
     }
 
     public void resumeStreaming() {

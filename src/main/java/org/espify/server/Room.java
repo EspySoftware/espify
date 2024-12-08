@@ -75,15 +75,23 @@ public class Room {
         }
     }
 
-    public void onPlaybackComplete() {
+    public synchronized void onPlaybackComplete() {
+        if (!isPlaying) { // Already processed completion
+            return;
+        }
+        
         isPlaying = false;
         AudioClientHandler audioHandler = getAudioClientHandler();
-
-        // Stop streaming the song to the client if it has finished playing
+    
         if (audioHandler != null) {
             audioHandler.setStreaming(false);
         }
-
+    
+        // Remove current song from playlist since it's complete
+        if (!playlist.isEmpty()) {
+            playlist.remove(0);
+        }
+    
         playNextSong();
     }
     
@@ -116,16 +124,19 @@ public class Room {
         }
     
         isPlaying = false;
-        long timestamp = System.currentTimeMillis() + 1000; // 1-second delay for synchronization
+        // Use a shorter delay for more responsive pausing
+        long timestamp = System.currentTimeMillis() + 500;
         broadcastWithTimestamp("pause", timestamp);
     
-        AudioClientHandler audioHandler = getAudioClientHandler();
-        if (audioHandler != null) {
-            audioHandler.pauseStreaming();
-            logger.info("Paused song: " + currentSong.getName());
-        } else {
-            broadcast("Error: Audio handler not available.");
+        // Pause streaming for all clients in the room
+        for (ClientHandler client : clients) {
+            AudioClientHandler audioHandler = client.getAudioClientHandler();
+            if (audioHandler != null) {
+                audioHandler.pauseStreaming();
+            }
         }
+        
+        logger.info("Paused song: " + currentSong.getName());
     }
 
     public synchronized void resumeSong() {
@@ -133,20 +144,20 @@ public class Room {
             broadcast("Music is already playing.");
             return;
         }
-
+    
         isPlaying = true;
-        long timestamp = System.currentTimeMillis() + 1000; // 1-second delay for synchronization
+        long timestamp = System.currentTimeMillis() + 1000;
         broadcastWithTimestamp("play", timestamp);
-
-        // Resume the streaming
-        AudioClientHandler audioHandler = getAudioClientHandler();
-        if (audioHandler != null) {
-            audioHandler.resumeStreaming();
-            logger.info("Resumed song: " + currentSong.getName());
-        } else {
-            broadcast("Error: Audio handler not available.");
-            isPlaying = false;
+    
+        // Resume streaming for all clients in the room
+        for (ClientHandler client : clients) {
+            AudioClientHandler audioHandler = client.getAudioClientHandler();
+            if (audioHandler != null) {
+                audioHandler.resumeStreaming();
+            }
         }
+    
+        logger.info("Resumed song: " + currentSong.getName());
     }
 
     // Broadcast a message with a timestamp for synchronization

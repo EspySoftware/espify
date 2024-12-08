@@ -12,10 +12,16 @@ public class AudioReceiver implements Runnable {
     private Logger logger = LoggerFactory.getLogger(AudioReceiver.class);
 
     private DataInputStream audioIn;
+    private PlaybackListener listener;
     private Client client;
     private Player player;
     private volatile boolean isPaused = false;
     private volatile boolean isStopped = false;
+    private BufferedInputStream bis;
+    
+    public void setPlaybackListener(PlaybackListener listener) {
+        this.listener = listener;
+    }
 
     public AudioReceiver(DataInputStream audioIn, Client client) {
         this.client = client;
@@ -23,12 +29,12 @@ public class AudioReceiver implements Runnable {
     }
 
     public void play() {
-        if (player != null && isPaused) {
+        if (isPaused) {
             logger.info("Resuming playback.");
             isPaused = false;
-            new Thread(this).start(); // Restart the run method to continue playback
-        } else if (player == null) {
-            new Thread(this).start(); // Start playback if not already playing
+            synchronized(this) {
+                notify(); // Wake up paused thread
+            }
         }
     }
 
@@ -36,34 +42,38 @@ public class AudioReceiver implements Runnable {
         if (player != null && !isPaused) {
             logger.info("Pausing playback.");
             isPaused = true;
-            player.close();
         }
     }
-
+    
     @Override
     public void run() {
-        logger.info("AudioClientHandler for client ID {} started.", client.getClientID());
-        while (!isStopped) {
-            if (!isPaused) {
-                // Start playback
-                try {
-                    BufferedInputStream bis = new BufferedInputStream(audioIn);
+        try {
+            while (!isStopped) {
+                if (isPaused) {
+                    synchronized(this) {
+                        while (isPaused && !isStopped) {
+                            wait(); // Wait while paused
+                        }
+                    }
+                    continue;
+                }
+
+                if (player == null) {
+                    bis = new BufferedInputStream(audioIn);
                     player = new Player(bis);
-                    logger.info("Starting playback.");
-                    player.play();
-                } catch (Exception e) {
-                    logger.error("Error during playback: {}", e.getMessage());
-                    break;
                 }
-            } else {
-                // Paused state: Wait without closing the socket
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    logger.error("AudioClientHandler thread interrupted: {}", e.getMessage());
-                    Thread.currentThread().interrupt();
-                    break;
+
+                logger.info("Starting playback.");
+                player.play();
+
+                if (!isStopped && !isPaused && listener != null) {
+                    listener.onPlaybackCompleted();
                 }
+            }
+        } catch (Exception e) {
+            logger.error("Error during playback: {}", e.getMessage());
+            if (listener != null) {
+                listener.onPlaybackError(e);
             }
         }
     }

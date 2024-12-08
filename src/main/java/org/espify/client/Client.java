@@ -79,8 +79,20 @@ public class Client {
     
             // Start Audio Listener Thread
             audioReceiver = new AudioReceiver(audioInputStream, this);
-            Thread audioListenerThread = new Thread(audioReceiver);
+            audioReceiver.setPlaybackListener(new PlaybackListener() {
+                @Override
+                public void onPlaybackCompleted() {
+                    sendMessage("playbackComplete");
+                }
+                
+                @Override
+                public void onPlaybackError(Exception e) {
+                    sendMessage("playbackError");
+                    logger.error("Playback error: {}", e.getMessage());
+                }
+            });
 
+            Thread audioListenerThread = new Thread(audioReceiver);
             audioListenerThread.setDaemon(true);
             audioListenerThread.start();
     
