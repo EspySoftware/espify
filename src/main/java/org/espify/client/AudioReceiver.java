@@ -32,14 +32,14 @@ public class AudioReceiver implements Runnable {
         if (isPaused) {
             logger.info("Resuming playback.");
             isPaused = false;
-            synchronized(this) {
-                notify(); // Wake up paused thread
+            synchronized (this) {
+                notify(); // Resume the playback thread
             }
         }
     }
-
+    
     public void pause() {
-        if (player != null && !isPaused) {
+        if (!isPaused) {
             logger.info("Pausing playback.");
             isPaused = true;
         }
@@ -50,22 +50,21 @@ public class AudioReceiver implements Runnable {
         try {
             while (!isStopped) {
                 if (isPaused) {
-                    synchronized(this) {
+                    synchronized (this) {
                         while (isPaused && !isStopped) {
                             wait(); // Wait while paused
                         }
                     }
-                    continue;
                 }
-
+    
                 if (player == null) {
                     bis = new BufferedInputStream(audioIn);
                     player = new Player(bis);
                 }
-
+    
                 logger.info("Starting playback.");
                 player.play();
-
+    
                 if (!isStopped && !isPaused && listener != null) {
                     listener.onPlaybackCompleted();
                 }

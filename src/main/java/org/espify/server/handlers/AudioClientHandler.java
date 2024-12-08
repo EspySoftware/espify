@@ -114,6 +114,7 @@ public class AudioClientHandler implements Runnable {
 
     public void resumeStreaming() {
         streaming = true;
+        paused = false;
         logger.info("Resumed streaming for client ID: {}", clientHandler.getClientID());
     }
 }

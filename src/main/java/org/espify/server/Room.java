@@ -58,7 +58,7 @@ public class Room {
         playlist.add(song);
         broadcast("Added song: " + song.getName());
         logger.info("Added song: " + song.getName());
-
+    
         if (!isPlaying) {
             playNextSong();
         }
@@ -72,26 +72,25 @@ public class Room {
             broadcast("No more songs in the playlist.");
             logger.info("No more songs in the playlist.");
             currentSong = null;
+            isPlaying = false;
         }
     }
 
     public synchronized void onPlaybackComplete() {
-        if (!isPlaying) { // Already processed completion
-            return;
+        if (!isPlaying) {
+            return; // Already processed completion
         }
-        
+    
         isPlaying = false;
-        AudioClientHandler audioHandler = getAudioClientHandler();
     
-        if (audioHandler != null) {
-            audioHandler.setStreaming(false);
-        }
-    
-        // Remove current song from playlist since it's complete
+        // Remove the finished song from the playlist
         if (!playlist.isEmpty()) {
             playlist.remove(0);
         }
     
+        currentSong = null;
+    
+        // Start playing the next song if available
         playNextSong();
     }
     
@@ -124,21 +123,20 @@ public class Room {
         }
     
         isPlaying = false;
-        // Use a shorter delay for more responsive pausing
-        long timestamp = System.currentTimeMillis() + 500;
+        long timestamp = System.currentTimeMillis() + 500; // For synchronization
         broadcastWithTimestamp("pause", timestamp);
     
-        // Pause streaming for all clients in the room
+        // Pause streaming for all clients
         for (ClientHandler client : clients) {
             AudioClientHandler audioHandler = client.getAudioClientHandler();
             if (audioHandler != null) {
                 audioHandler.pauseStreaming();
             }
         }
-        
+    
         logger.info("Paused song: " + currentSong.getName());
     }
-
+    
     public synchronized void resumeSong() {
         if (isPlaying) {
             broadcast("Music is already playing.");
@@ -146,10 +144,10 @@ public class Room {
         }
     
         isPlaying = true;
-        long timestamp = System.currentTimeMillis() + 1000;
+        long timestamp = System.currentTimeMillis() + 1000; // For synchronization
         broadcastWithTimestamp("play", timestamp);
     
-        // Resume streaming for all clients in the room
+        // Resume streaming for all clients
         for (ClientHandler client : clients) {
             AudioClientHandler audioHandler = client.getAudioClientHandler();
             if (audioHandler != null) {
@@ -158,6 +156,29 @@ public class Room {
         }
     
         logger.info("Resumed song: " + currentSong.getName());
+    }
+
+    public synchronized void skipSong() {
+        if (isPlaying) {
+            isPlaying = false;
+            AudioClientHandler audioHandler = getAudioClientHandler();
+            if (audioHandler != null) {
+                audioHandler.setStreaming(false);
+            }
+            broadcast("Song skipped: " + currentSong.getName());
+            logger.info("Song skipped: " + currentSong.getName());
+    
+            // Remove the current song from the playlist
+            if (!playlist.isEmpty()) {
+                playlist.remove(0);
+            }
+            currentSong = null;
+    
+            // Start the next song if available
+            playNextSong();
+        } else {
+            broadcast("No song is currently playing.");
+        }
     }
 
     // Broadcast a message with a timestamp for synchronization
@@ -197,7 +218,7 @@ public class Room {
         return clients.size();
     }
 
-    private AudioClientHandler getAudioClientHandler() {
+    private synchronized AudioClientHandler getAudioClientHandler() {
         for (ClientHandler client : clients) {
             if (client.getCurrentRoom() == this) {
                 return client.getAudioClientHandler();

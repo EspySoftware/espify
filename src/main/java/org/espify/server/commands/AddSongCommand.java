@@ -4,6 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import org.espify.models.Song;
+import org.espify.server.Room;
 import org.espify.server.handlers.ClientHandler;
 import org.espify.utils.YTDownloadAPI;
 
@@ -11,37 +12,35 @@ public class AddSongCommand implements Command {
     @Override
     public void execute(String[] args, ClientHandler clientHandler) {
         if (args.length < 2) {
-            clientHandler.sendMessage("Usage: addSong <filePath>");
+            clientHandler.sendMessage("Usage: add <YouTube URL or keywords>");
             return;
         }
-        
-        // Get the youtube url or keywords
+
         String query = args[1].trim();
 
-        // This function treats the query as a youtube url or keywords
+        // Download the audio and retrieve song details
         String downloadResult = YTDownloadAPI.DownloadAudio(query);
-
-        // The result is a string with the song name and the file path separated by a pipe
         String[] parts = downloadResult.split("•");
+
+        if (parts.length < 2) {
+            clientHandler.sendMessage("Failed to download or parse the song.");
+            return;
+        }
+
         String songName = parts[0];
         String filePath = parts[1];
 
-        // Check if the file exists
-        if (!Files.exists(Paths.get(filePath))) {
-            clientHandler.sendMessage("File does not exist: " + filePath);
+        // Check if the file exists and is an MP3
+        if (!Files.exists(Paths.get(filePath)) || !filePath.endsWith(".mp3")) {
+            clientHandler.sendMessage("Invalid file: " + filePath);
             return;
         }
 
-        // Check if the file is an mp3 file
-        if (!filePath.endsWith(".mp3")) {
-            clientHandler.sendMessage("File is not an mp3 file: " + filePath);
-            return;
-        }
-
-        // Check if the client is in a room
-        if (clientHandler.getCurrentRoom() != null) {
+        // Add the song to the current room's playlist
+        Room currentRoom = clientHandler.getCurrentRoom();
+        if (currentRoom != null) {
             Song newSong = new Song(songName, filePath);
-            clientHandler.getCurrentRoom().addSong(newSong);
+            currentRoom.addSong(newSong);
             clientHandler.sendMessage("Added song: " + songName);
         } else {
             clientHandler.sendMessage("You are not in a room.");
