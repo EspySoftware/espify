@@ -77,43 +77,27 @@ public class Client {
             audioOutput.println(clientID);
             logger.info("Sent client ID to audio server: {}", clientID);
     
-            // Start Audio Listener Thread
-            audioReceiver = new AudioReceiver(audioInputStream, this);
-            audioReceiver.setPlaybackListener(new PlaybackListener() {
-                @Override
-                public void onPlaybackCompleted() {
-                    sendMessage("playbackComplete");
-                }
-                
-                @Override
-                public void onPlaybackError(Exception e) {
-                    sendMessage("playbackError");
-                    logger.error("Playback error: {}", e.getMessage());
-                }
-            });
+            // Initialize AudioReceiver
+            audioReceiver = new AudioReceiver(audioInputStream);
+            Thread audioThread = new Thread(audioReceiver);
+            audioThread.start();
 
-            Thread audioListenerThread = new Thread(audioReceiver);
-            audioListenerThread.setDaemon(true);
-            audioListenerThread.start();
-    
-            // Start Control Listener Thread
-            Thread controlListenerThread = new Thread(() -> {
-                String msg;
+            // Start a thread to listen for server messages
+            new Thread(() -> {
+                String serverMessage;
                 try {
-                    while ((msg = controlInput.readLine()) != null) {
-                        handleServerMessage(msg);
+                    while ((serverMessage = controlInput.readLine()) != null) {
+                        handleServerMessage(serverMessage);
                     }
                 } catch (IOException e) {
-                    logger.error("Error reading from control socket: {}", e.getMessage());
+                    logger.error("Error reading server messages: {}", e.getMessage());
                 }
-            });
-            controlListenerThread.setDaemon(true);
-            controlListenerThread.start();
-    
-            // Add shutdown hook
-            Runtime.getRuntime().addShutdownHook(new Thread(this::cleanup));
+            }).start();
+
+            logger.info("Connected to server at {}", serverIp);
+
         } catch (IOException e) {
-            logger.error("Failed to connect to server: {}", e.getMessage());
+            logger.error("Connection error: {}", e.getMessage());
         }
     }
 
@@ -152,19 +136,24 @@ public class Client {
                 audioReceiver.pause();
             }
         } else {
+            // Display other messages to the user
             System.out.println(message);
         }
     }
     
     private long parseTimestamp(String message) {
+        // Extract the timestamp from the message
         try {
-            return Long.parseLong(message.split(" ")[1]);
-        } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
-            logger.error("Failed to parse timestamp from message: {}", message);
-            return System.currentTimeMillis();
+            String[] parts = message.split("\\s+");
+            if (parts.length > 1) {
+                return Long.parseLong(parts[1]);
+            }
+        } catch (NumberFormatException e) {
+            logger.error("Invalid timestamp in message: {}", message);
         }
+        return System.currentTimeMillis();
     }
-
+    
     private void schedulePlayback(long timestamp) {
         long delay = timestamp - System.currentTimeMillis();
         if (delay < 0) delay = 0;

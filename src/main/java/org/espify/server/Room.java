@@ -123,8 +123,8 @@ public class Room {
         }
     
         isPlaying = false;
-        long timestamp = System.currentTimeMillis() + 500; // For synchronization
-        broadcastWithTimestamp("pause", timestamp);
+        broadcast("Music paused.");
+        logger.info("Paused song: " + currentSong.getName());
     
         // Pause streaming for all clients
         for (ClientHandler client : clients) {
@@ -133,8 +133,6 @@ public class Room {
                 audioHandler.pauseStreaming();
             }
         }
-    
-        logger.info("Paused song: " + currentSong.getName());
     }
     
     public synchronized void resumeSong() {
@@ -143,9 +141,19 @@ public class Room {
             return;
         }
     
+        if (currentSong == null) {
+            broadcast("No song is currently playing.");
+            return;
+        }
+
+        if (playlist.isEmpty()) {
+            broadcast("No more songs in the playlist.");
+            return;
+        }
+
         isPlaying = true;
-        long timestamp = System.currentTimeMillis() + 1000; // For synchronization
-        broadcastWithTimestamp("play", timestamp);
+        broadcast("Music resumed.");
+        logger.info("Resumed song: " + currentSong.getName());
     
         // Resume streaming for all clients
         for (ClientHandler client : clients) {
@@ -154,8 +162,6 @@ public class Room {
                 audioHandler.resumeStreaming();
             }
         }
-    
-        logger.info("Resumed song: " + currentSong.getName());
     }
 
     public synchronized void skipSong() {

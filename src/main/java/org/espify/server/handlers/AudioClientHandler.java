@@ -5,7 +5,6 @@ import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Socket;
-import javazoom.jl.decoder.JavaLayerException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +51,7 @@ public class AudioClientHandler implements Runnable {
         new Thread(() -> {
             try {
                 streamSong(filePath);
-            } catch (IOException | JavaLayerException e) {
+            } catch (IOException e) {
                 logger.error("Error streaming song to client ID {}: {}", clientHandler.getClientID(), e.getMessage());
                 clientHandler.sendMessage("Error streaming song: " + e.getMessage());
                 streaming = false;
@@ -64,21 +63,32 @@ public class AudioClientHandler implements Runnable {
         this.streaming = streaming;
     }
 
-    private void streamSong(String filePath) throws IOException, JavaLayerException {
-        try (FileInputStream fis = new FileInputStream(filePath);
-            BufferedInputStream bis = new BufferedInputStream(fis)) {
+    private void streamSong(String filePath) throws IOException {
+        FileInputStream fis = new FileInputStream(filePath);
+        BufferedInputStream bis = new BufferedInputStream(fis);
+        try {
             byte[] buffer = new byte[1024];
             int bytesRead;
-
-            while ((bytesRead = bis.read(buffer)) != -1 && streaming && !paused) {
+    
+            while (streaming && (bytesRead = bis.read(buffer)) != -1) {
+                synchronized (this) {
+                    while (paused) {
+                        wait();
+                    }
+                }
                 sendAudioData(buffer, bytesRead);
                 try {
-                    Thread.sleep(50);
+                    Thread.sleep(50); // Adjust the sleep time as needed
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;
                 }
             }
+        } catch (Exception e) {
+            logger.error("Error streaming song: {}", e.getMessage());
+        } finally {
+            bis.close();
+            fis.close();
         }
     }
 
@@ -107,11 +117,11 @@ public class AudioClientHandler implements Runnable {
             logger.info("Streaming paused for client ID: {}", clientHandler.getClientID());
         }
     }
-
+    
     public synchronized void resumeStreaming() {
         if (paused) {
             paused = false;
-            notify();
+            notifyAll();
             logger.info("Streaming resumed for client ID: {}", clientHandler.getClientID());
         }
     }
