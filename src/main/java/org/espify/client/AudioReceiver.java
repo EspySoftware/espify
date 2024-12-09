@@ -28,46 +28,44 @@ public class AudioReceiver implements Runnable {
         this.audioIn = audioIn;
     }
 
-    public void play() {
-        if (isPaused) {
-            logger.info("Resuming playback.");
-            isPaused = false;
-            synchronized (this) {
-                notify(); // Resume the playback thread
-            }
+    public synchronized void pause() {
+        if (!isPaused) {
+            isPaused = true;
+            logger.info("Playback paused.");
         }
     }
     
-    public void pause() {
-        if (!isPaused) {
-            logger.info("Pausing playback.");
-            isPaused = true;
+    public synchronized void play() {
+        if (isPaused) {
+            isPaused = false;
+            notify();
+            logger.info("Playback resumed.");
         }
     }
     
     @Override
     public void run() {
         try {
+            bis = new BufferedInputStream(audioIn);
+            player = new Player(bis);
+    
             while (!isStopped) {
                 if (isPaused) {
                     synchronized (this) {
                         while (isPaused && !isStopped) {
-                            wait(); // Wait while paused
+                            wait();
                         }
                     }
                 }
     
-                if (player == null) {
-                    bis = new BufferedInputStream(audioIn);
-                    player = new Player(bis);
+                // Play the next frame
+                if (!player.play(1)) {
+                    break; // End of stream
                 }
+            }
     
-                logger.info("Starting playback.");
-                player.play();
-    
-                if (!isStopped && !isPaused && listener != null) {
-                    listener.onPlaybackCompleted();
-                }
+            if (!isStopped && !isPaused && listener != null) {
+                listener.onPlaybackCompleted();
             }
         } catch (Exception e) {
             logger.error("Error during playback: {}", e.getMessage());

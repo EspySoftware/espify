@@ -101,20 +101,18 @@ public class AudioClientHandler implements Runnable {
         return clientHandler.getClientID();
     }
 
-    public void pauseStreaming() {
-        streaming = false;
-        paused = true;
-        // Clear output buffer
-        try {
-            audioOut.flush();
-        } catch (IOException e) {
-            logger.error("Error flushing audio buffer: {}", e.getMessage());
+    public synchronized void pauseStreaming() {
+        if (!paused) {
+            paused = true;
+            logger.info("Streaming paused for client ID: {}", clientHandler.getClientID());
         }
     }
 
-    public void resumeStreaming() {
-        streaming = true;
-        paused = false;
-        logger.info("Resumed streaming for client ID: {}", clientHandler.getClientID());
+    public synchronized void resumeStreaming() {
+        if (paused) {
+            paused = false;
+            notify();
+            logger.info("Streaming resumed for client ID: {}", clientHandler.getClientID());
+        }
     }
 }

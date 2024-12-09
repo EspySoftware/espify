@@ -160,7 +160,8 @@ public class Room {
 
     public synchronized void skipSong() {
         if (isPlaying) {
-            isPlaying = false;
+            pauseSong();
+
             AudioClientHandler audioHandler = getAudioClientHandler();
             if (audioHandler != null) {
                 audioHandler.setStreaming(false);

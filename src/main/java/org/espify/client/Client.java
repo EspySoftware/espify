@@ -101,7 +101,7 @@ public class Client {
                 String msg;
                 try {
                     while ((msg = controlInput.readLine()) != null) {
-                        handleMessage(msg);
+                        handleServerMessage(msg);
                     }
                 } catch (IOException e) {
                     logger.error("Error reading from control socket: {}", e.getMessage());
@@ -143,37 +143,40 @@ public class Client {
         }
     }
 
-    void handleMessage(String msg) {
-        String[] parts = msg.split(" ");
-        String command = parts[0];
-
-        if (command.equals("play")) {
-            if (parts.length < 2) {
-                System.out.println("Invalid play command received.");
-                return;
+    public void handleServerMessage(String message) {
+        if (message.startsWith("play")) {
+            long timestamp = parseTimestamp(message);
+            schedulePlayback(timestamp);
+        } else if (message.startsWith("pause")) {
+            if (audioReceiver != null) {
+                audioReceiver.pause();
             }
-            long timestamp = Long.parseLong(parts[1]);
-            long currentTime = System.currentTimeMillis();
-            long delay = timestamp - currentTime;
-            if (delay > 0) {
-                // Schedule the play action
-                new Timer().schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        audioReceiver.play();
-                    }
-                }, delay);
-            } else {
-                audioReceiver.play();
-            }
-        } else if (command.equals("pause")) {
-            audioReceiver.pause();
-        } else if (msg.equals("You have been disconnected.")) {
-            logger.info("Disconnected from the server.");
-            System.exit(0);
         } else {
-            System.out.println(msg);
+            System.out.println(message);
         }
+    }
+    
+    private long parseTimestamp(String message) {
+        try {
+            return Long.parseLong(message.split(" ")[1]);
+        } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
+            logger.error("Failed to parse timestamp from message: {}", message);
+            return System.currentTimeMillis();
+        }
+    }
+
+    private void schedulePlayback(long timestamp) {
+        long delay = timestamp - System.currentTimeMillis();
+        if (delay < 0) delay = 0;
+    
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (audioReceiver != null) {
+                    audioReceiver.play();
+                }
+            }
+        }, delay);
     }
 
     public static void sendMessage(String message) {
