@@ -78,7 +78,7 @@ public class AudioClientHandler implements Runnable {
                 }
                 sendAudioData(buffer, bytesRead);
                 try {
-                    Thread.sleep(50); // Adjust the sleep time as needed
+                    Thread.sleep(50); // Delay depends on the buffer size
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;

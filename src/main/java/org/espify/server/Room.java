@@ -99,20 +99,22 @@ public class Room {
             broadcast("Music is already playing.");
             return;
         }
-
+    
         currentSong = song;
         isPlaying = true;
         long timestamp = System.currentTimeMillis() + 1000; // 1-second delay for synchronization
         broadcastWithTimestamp("play", timestamp);
-
-        // Start streaming the song
-        AudioClientHandler audioHandler = getAudioClientHandler();
-        if (audioHandler != null) {
-            audioHandler.streamSongAsync(currentSong.getFilePath());
-            logger.info("Started playing song: " + currentSong.getName());
-        } else {
-            broadcast("Error: Audio handler not available.");
-            isPlaying = false;
+    
+        // Start streaming the song to all clients
+        for (ClientHandler client : clients) {
+            AudioClientHandler audioHandler = client.getAudioClientHandler();
+            if (audioHandler != null) {
+                audioHandler.streamSongAsync(currentSong.getFilePath());
+                logger.info("Started playing song for client ID: " + client.getClientID());
+            } else {
+                client.sendMessage("Error: Audio handler not available.");
+                isPlaying = false;
+            }
         }
     }
 
